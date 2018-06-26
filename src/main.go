@@ -1,6 +1,8 @@
 package main
 
 import "fmt"
+import "os"
+import "sort"
 import "encoding/json"
 
 import "../terraform-provider-aws/aws"
@@ -63,57 +65,81 @@ func Types() []string {
 	}
 }
 
+func cast(terraformResource aws.TerraformResource) Resource {
+	schemas := []Schema{}
+	for name, schema := range terraformResource.Value.Schema {
+
+		newSchema := Schema{
+			Name: name,
+			Value: SchemaValue{
+				Type: Types()[schema.Type],
+				Optional: schema.Optional,
+				Required: schema.Required,
+				Default: schema.Default,
+				Description: schema.Description,
+				InputDefault: schema.InputDefault,
+				Computed: schema.Computed,
+				ForceNew: schema.ForceNew,
+				// Elem: schema.Elem,
+				MaxItems: schema.MaxItems,
+				MinItems: schema.MinItems,
+				PromoteSingle: schema.PromoteSingle,
+				ComputedWhen: schema.ComputedWhen,
+				ConflictsWith: schema.ConflictsWith,
+				Deprecated: schema.Deprecated,
+				Removed: schema.Removed,
+				Sensitive: schema.Sensitive,
+			},
+		}
+
+		schemas = append(schemas, newSchema)
+	}
+
+	sort.Slice(schemas, func(i, j int) bool {
+		return schemas[i].Name < schemas[j].Name
+	})
+
+	return Resource{
+		Type: ResourceTypes()[terraformResource.Type],
+		Name: terraformResource.Name,
+		Value: ResourceValue{
+			Schema: schemas,
+			SchemaVersion: terraformResource.Value.SchemaVersion,
+			DeprecationMessage: terraformResource.Value.DeprecationMessage,
+		},
+	}
+}
+
+func write(f *os.File, resource Resource) error {
+	bytes, err := json.Marshal(resource)
+	if err == nil { _, err = f.Write(bytes) }
+	if err == nil { _, err = f.Write([]byte("\n")) }
+
+	return err
+}
+
 func main() {
 	terraformResources := append(aws.DataSources(), aws.Resources()...)
 
 	resources := []Resource{}
 	for _, terraformResource := range terraformResources {
-
-		schemas := []Schema{}
-		for name, schema := range terraformResource.Value.Schema {
-			newSchema := Schema{
-				Name: name,
-				Value: SchemaValue{
-					Type: Types()[schema.Type],
-					Optional: schema.Optional,
-					Required: schema.Required,
-					Default: schema.Default,
-					Description: schema.Description,
-					InputDefault: schema.InputDefault,
-					Computed: schema.Computed,
-					ForceNew: schema.ForceNew,
-					// Elem: schema.Elem,
-					MaxItems: schema.MaxItems,
-					MinItems: schema.MinItems,
-					PromoteSingle: schema.PromoteSingle,
-					ComputedWhen: schema.ComputedWhen,
-					ConflictsWith: schema.ConflictsWith,
-					Deprecated: schema.Deprecated,
-					Removed: schema.Removed,
-					Sensitive: schema.Sensitive,
-				},
-			}
-
-			schemas = append(schemas, newSchema)
-		}
-
-		newResource := Resource{
-			Type: ResourceTypes()[terraformResource.Type],
-			Name: terraformResource.Name,
-			Value: ResourceValue{
-				Schema: schemas,
-				SchemaVersion: terraformResource.Value.SchemaVersion,
-				DeprecationMessage: terraformResource.Value.DeprecationMessage,
-			},
-		}
-
+		newResource := cast(terraformResource)
 		resources = append(resources, newResource)
 	}
 
-	for _, resource := range resources {
-		bytes, err := json.Marshal(resource)
-		if err != nil { panic(err) }
+	filePath := "docs/terraform-provider-aws.json"
 
-		fmt.Println(string(bytes))
+	err := os.Remove(filePath)
+	if err != nil { panic(err) }
+
+	f, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil { panic(err) }
+    defer f.Close()
+
+	for _, resource := range resources {
+		err = write(f, resource)
+		if err != nil { panic(err) }
 	}
+
+	fmt.Println("done")
 }
