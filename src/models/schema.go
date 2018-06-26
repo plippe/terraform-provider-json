@@ -1,5 +1,7 @@
 package models
 
+import "fmt"
+
 import "github.com/hashicorp/terraform/helper/schema"
 
 type Schema struct {
@@ -16,7 +18,7 @@ type SchemaValue struct {
 	InputDefault string
 	Computed bool
 	ForceNew bool
-	// Elem interface{}
+	Elem interface{}
 	MaxItems int
 	MinItems int
 	PromoteSingle bool
@@ -46,24 +48,41 @@ func SchemaType(i schema.ValueType) string {
 func SchemaBuilder(name string, terraformSchema *schema.Schema) Schema {
 	return Schema{
 		Name: name,
-		Value: SchemaValue{
-			Type: SchemaType(terraformSchema.Type),
-			Optional: terraformSchema.Optional,
-			Required: terraformSchema.Required,
-			Default: terraformSchema.Default,
-			Description: terraformSchema.Description,
-			InputDefault: terraformSchema.InputDefault,
-			Computed: terraformSchema.Computed,
-			ForceNew: terraformSchema.ForceNew,
-			// Elem: terraformSchema.Elem,
-			MaxItems: terraformSchema.MaxItems,
-			MinItems: terraformSchema.MinItems,
-			PromoteSingle: terraformSchema.PromoteSingle,
-			ComputedWhen: terraformSchema.ComputedWhen,
-			ConflictsWith: terraformSchema.ConflictsWith,
-			Deprecated: terraformSchema.Deprecated,
-			Removed: terraformSchema.Removed,
-			Sensitive: terraformSchema.Sensitive,
-		},
+		Value: SchemaValueBuilder(terraformSchema),
+	}
+}
+
+func SchemaValueBuilder(terraformSchema *schema.Schema) SchemaValue {
+	var elem interface{} = nil
+
+	switch v := terraformSchema.Elem.(type) {
+	case *schema.Resource:
+		elem = ResourceValueBuilder(terraformSchema.Elem.(*schema.Resource))
+	case *schema.Schema:
+		elem = SchemaValueBuilder(terraformSchema.Elem.(*schema.Schema))
+	case nil, schema.ValueType:
+		elem = terraformSchema.Elem
+	default:
+		panic(fmt.Sprintf("I don't know about type %T!\n", v))
+	}
+
+	return SchemaValue{
+		Type: SchemaType(terraformSchema.Type),
+		Optional: terraformSchema.Optional,
+		Required: terraformSchema.Required,
+		Default: terraformSchema.Default,
+		Description: terraformSchema.Description,
+		InputDefault: terraformSchema.InputDefault,
+		Computed: terraformSchema.Computed,
+		ForceNew: terraformSchema.ForceNew,
+		Elem: elem,
+		MaxItems: terraformSchema.MaxItems,
+		MinItems: terraformSchema.MinItems,
+		PromoteSingle: terraformSchema.PromoteSingle,
+		ComputedWhen: terraformSchema.ComputedWhen,
+		ConflictsWith: terraformSchema.ConflictsWith,
+		Deprecated: terraformSchema.Deprecated,
+		Removed: terraformSchema.Removed,
+		Sensitive: terraformSchema.Sensitive,
 	}
 }
