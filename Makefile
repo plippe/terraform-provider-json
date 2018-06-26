@@ -15,5 +15,5 @@ init:
 	go get gopkg.in/yaml.v2
 
 run:
-	cp src/aws.go terraform-provider-aws/aws
+	cp src/providers/aws.go terraform-provider-aws/aws
 	go run src/main.go

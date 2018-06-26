@@ -11,4 +11,4 @@ HCL abstraction.
 `make init run`
 
 ### Supported Providers
-- [terraform-provider-aws](https://github.com/terraform-providers/terraform-provider-aws)
+- [terraform-provider-aws](https://github.com/terraform-providers/terraform-provider-aws) - [JSON](https://plippe.github.io/terraform-provider-json/terraform-provider-aws.json)
