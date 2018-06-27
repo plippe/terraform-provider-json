@@ -1,3 +1,5 @@
+GO_FILES?=$$(find src -name '*.go')
+
 init:
 	git submodule update --init --recursive
 
@@ -17,3 +19,9 @@ init:
 run:
 	cp src/providers/aws.go terraform-provider-aws/aws
 	go run src/main.go
+
+format:
+	gofmt -w -s $(GO_FILES)
+
+test:
+	[ -z "$$(gofmt -l -s $(GO_FILES))" ]

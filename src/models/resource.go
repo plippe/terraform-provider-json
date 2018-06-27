@@ -6,14 +6,14 @@ import "../../terraform-provider-aws/aws"
 import "github.com/hashicorp/terraform/helper/schema"
 
 type Resource struct {
-	Type string
-	Name string
+	Type  string
+	Name  string
 	Value ResourceValue
 }
 
 type ResourceValue struct {
-	Schema []Schema
-	SchemaVersion int
+	Schema             []Schema
+	SchemaVersion      int
 	DeprecationMessage string
 }
 
@@ -28,8 +28,8 @@ func ResourceType(i aws.TerraformResourceType) string {
 
 func ResourceBuilder(terraformResource aws.TerraformResource) Resource {
 	return Resource{
-		Type: ResourceType(terraformResource.Type),
-		Name: terraformResource.Name,
+		Type:  ResourceType(terraformResource.Type),
+		Name:  terraformResource.Name,
 		Value: ResourceValueBuilder(terraformResource.Value),
 	}
 }
@@ -48,8 +48,8 @@ func ResourceValueBuilder(terraformResource *schema.Resource) ResourceValue {
 	})
 
 	return ResourceValue{
-		Schema: schemas,
-		SchemaVersion: terraformResource.SchemaVersion,
+		Schema:             schemas,
+		SchemaVersion:      terraformResource.SchemaVersion,
 		DeprecationMessage: terraformResource.DeprecationMessage,
 	}
 }
