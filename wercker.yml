@@ -1,0 +1,10 @@
+box: golang:1.10.3
+build:
+  steps:
+    - script:
+        name: pre-build
+        code: make init
+
+    - script:
+        name: test
+        code: make test
